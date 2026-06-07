@@ -1,0 +1,67 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Golden Circular Ring -->
+    <path
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="2"
+        android:pathData="M 54, 54 m -28, 0 a 28,28 0 1,1 56,0 a 28,28 0 1,1 -56,0" />
+
+    <!-- Inner Slim Golden Ring -->
+    <path
+        android:strokeColor="#F3E5AB"
+        android:strokeWidth="0.8"
+        android:pathData="M 54, 54 m -24, 0 a 24,24 0 1,1 48,0 a 24,24 0 1,1 -48,0" />
+
+    <!-- Sparkle Stars -->
+    <path
+        android:fillColor="#F3E5AB"
+        android:pathData="M 28,34 L 29,37 L 32,38 L 29,39 L 28,42 L 27,39 L 24,38 L 27,37 Z" />
+    <path
+        android:fillColor="#F3E5AB"
+        android:pathData="M 80,42 L 81,44 L 83,45 L 81,46 L 80,48 L 79,46 L 77,45 L 79,44 Z" />
+
+    <!-- Facet 1: Central Table Top (Golden Light) -->
+    <path
+        android:fillColor="#F3E5AB"
+        android:pathData="M 45,44 L 63,44 L 54,50 Z" />
+
+    <!-- Facet 2: Left Top Crown (Classic Gold) -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M 45,44 L 38,50 L 47,50 Z" />
+
+    <!-- Facet 3: Right Top Crown (Classic Gold) -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M 63,44 L 70,50 L 61,50 Z" />
+
+    <!-- Facet 4: Left Inner Crown Segment (Pale Gold) -->
+    <path
+        android:fillColor="#E5C158"
+        android:pathData="M 45,44 L 47,50 L 54,50 Z" />
+
+    <!-- Facet 5: Right Inner Crown Segment (Pale Gold) -->
+    <path
+        android:fillColor="#E5C158"
+        android:pathData="M 63,44 L 54,50 L 61,50 Z" />
+
+    <!-- Facet 6: Center Pavilion Facet (Intense Gold) -->
+    <path
+        android:fillColor="#AA8311"
+        android:pathData="M 47,50 L 61,50 L 54,68 Z" />
+
+    <!-- Facet 7: Left Outer Pavilion Facet (Deep Shadow Gold) -->
+    <path
+        android:fillColor="#8C660A"
+        android:pathData="M 38,50 L 47,50 L 54,68 Z" />
+
+    <!-- Facet 8: Right Outer Pavilion Facet (Deep Shadow Gold) -->
+    <path
+        android:fillColor="#8C660A"
+        android:pathData="M 70,50 L 61,50 L 54,68 Z" />
+
+</vector>

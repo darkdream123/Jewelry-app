@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.data.db.Customer
@@ -2375,210 +2376,152 @@ fun PosScreen(viewModel: JewelViewModel) {
     var showCustomerSelect by remember { mutableStateOf(false) }
     var discountInput by remember { mutableStateOf("0") }
 
-    Column(
+    // POS local search/filtering states
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedMetalTab by remember { mutableStateOf("All") }
+
+    val filteredItems = availableItems.filter { item ->
+        val matchesSearch = item.name.contains(searchQuery, ignoreCase = true) || item.code.contains(searchQuery, ignoreCase = true)
+        val matchesMetal = selectedMetalTab == "All" || item.metalType.equals(selectedMetalTab, ignoreCase = true)
+        matchesSearch && matchesMetal
+    }
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(LuxuryDarkBg)
-            .padding(16.dp)
     ) {
-        Text(
-            text = viewModel.t("SHOWROOM COUNTER", "শোরুম কাউন্টার"),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = GoldColor
-        )
-        Text(
-            text = viewModel.t("Point of Sale", "বিক্রয় কেন্দ্র (POS)"),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        val isWideScreen = maxWidth > 720.dp
 
-        // Customer Selection Block
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            colors = CardDefaults.cardColors(containerColor = LuxurySurface),
-            border = BorderStroke(1.dp, CardOutline)
-        ) {
+        if (isWideScreen) {
+            // Side-by-side split layout: Left = Catalog Picker (55%), Right = Invoice Desk (45%)
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Column {
-                    Text(viewModel.t("Assigned Customer CRM", "গ্রাহকের প্রোফাইল (CRM)"), fontSize = 10.sp, color = SilverAccent)
-                    Text(
-                        text = if(viewModel.cartCustomer?.name == null) viewModel.t("Walk-in Showroom Guest", "শোরুমের সাধারণ ক্রেতা") else viewModel.cartCustomer!!.name,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = if (viewModel.cartCustomer != null) GoldColor else Color.White
-                    )
-                    viewModel.cartCustomer?.phone?.let {
-                        Text(viewModel.t("Phone: ", "ফোন: ") + it, fontSize = 11.sp, color = SilverAccent)
-                    }
-                }
-
-                Button(
-                    onClick = { showCustomerSelect = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = LuxurySurfaceCard),
-                    border = BorderStroke(1.dp, CardOutline)
+                // LEFT SIDE: CATALOGUE SELECTOR (55% weight)
+                Column(
+                    modifier = Modifier
+                        .weight(0.55f)
+                        .fillMaxHeight()
                 ) {
-                    Text(if (viewModel.cartCustomer == null) viewModel.t("LINK CRM", "গ্রাহক লিঙ্ক করুন") else viewModel.t("CHANGE", "পরিবর্তন"), color = GoldColor, fontSize = 11.sp)
+                    PosCatalogPanel(
+                        viewModel = viewModel,
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        selectedMetalTab = selectedMetalTab,
+                        onMetalTabSelect = { selectedMetalTab = it },
+                        filteredItems = filteredItems,
+                        onItemAdd = { viewModel.addJewelToCart(it) }
+                    )
                 }
-            }
-        }
 
-        // Cart List Section
-        Text(
-            text = viewModel.t("Active Basket (", "সক্রিয় কার্ট (") + "${cartItems.size})",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
-
-        if (cartItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(LuxurySurface, RoundedCornerShape(12.dp))
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = "Empty", tint = CardOutline, modifier = Modifier.size(54.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(viewModel.t("POS billing cart is currently empty.", "বিক্রয় কার্টটি বর্তমানে খালি রয়েছে।"), color = SilverAccent, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
-                        onClick = { viewModel.navigateTo(AppScreen.INVENTORY) },
-                        border = BorderStroke(1.dp, GoldColor)
-                    ) {
-                        Text(viewModel.t("BROWSE CATALOGUE", "ক্যাটালগ দেখুন"), color = GoldColor, fontSize = 11.sp)
-                    }
+                // RIGHT SIDE: BILLING & CHECKOUT (45% weight)
+                Column(
+                    modifier = Modifier
+                        .weight(0.45f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PosBillingPanel(
+                        viewModel = viewModel,
+                        cartItems = cartItems,
+                        discountInput = discountInput,
+                        onDiscountChange = {
+                            discountInput = it
+                            viewModel.discountPercent = it.toDoubleOrNull() ?: 0.0
+                        },
+                        onLinkCustomerClick = { showCustomerSelect = true }
+                    )
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(LuxurySurface, RoundedCornerShape(12.dp))
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(cartItems) { item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(LuxurySurfaceCard, RoundedCornerShape(8.dp))
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(item.item.code, fontSize = 9.sp, color = GoldColor, fontWeight = FontWeight.Bold)
-                            Text(item.item.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text("${item.item.purity} • ${item.item.weight}g", color = SilverAccent, fontSize = 11.sp)
-                        }
+            // Compact Mobile View: Two Tabs (Catalog Pick vs Active Invoice)
+            var activeTab by remember { mutableStateOf(0) } // 0 = Catalog, 1 = Invoice & Billing
 
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                "${viewModel.currencySymbol}${String.format("%.2f", item.finalPrice)}",
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
-                            IconButton(onClick = { viewModel.removeCartItem(item) }, modifier = Modifier.size(24.dp)) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove", tint = Color.Red, modifier = Modifier.size(16.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp)
+            ) {
+                // Top Tab Bar
+                TabRow(
+                    selectedTabIndex = activeTab,
+                    containerColor = LuxuryDarkBg,
+                    contentColor = GoldColor,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[activeTab]),
+                            color = GoldColor
+                        )
+                    },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Tab(
+                        selected = activeTab == 0,
+                        onClick = { activeTab = 0 },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(viewModel.t("Catalog Pick (${filteredItems.size})", "ক্যাটালগ নির্বাচন (${filteredItems.size})"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
+                    )
+                    Tab(
+                        selected = activeTab == 1,
+                        onClick = { activeTab = 1 },
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                BadgedBox(badge = {
+                                    if (cartItems.isNotEmpty()) {
+                                        Badge(containerColor = GoldColor, contentColor = Color.Black) {
+                                            Text(cartItems.size.toString(), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }) {
+                                    Icon(Icons.Default.ReceiptLong, contentDescription = null, modifier = Modifier.size(16.dp))
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(viewModel.t("Billing Desk", "বিলিং ও রসিদ"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    )
+                }
+
+                if (activeTab == 0) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        PosCatalogPanel(
+                            viewModel = viewModel,
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { searchQuery = it },
+                            selectedMetalTab = selectedMetalTab,
+                            onMetalTabSelect = { selectedMetalTab = it },
+                            filteredItems = filteredItems,
+                            onItemAdd = { viewModel.addJewelToCart(it) }
+                        )
                     }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Calculations & Pricing Desk
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = LuxurySurface)
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(viewModel.t("Total Jewel Weight", "অলঙ্কারের মোট ওজন"), fontSize = 12.sp, color = SilverAccent)
-                    Text("${viewModel.totalWeight} grams", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(viewModel.t("Pre-Tax Subtotal", "কর-পূর্ব সাবটোটাল"), fontSize = 12.sp, color = SilverAccent)
-                    Text("${viewModel.currencySymbol}${String.format("%.2f", viewModel.subtotal)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                // Editable Discount Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(viewModel.t("Special Discount (%)", "বিশেষ ছাড় (%)"), fontSize = 12.sp, color = SilverAccent)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = discountInput,
-                            onValueChange = {
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        PosBillingPanel(
+                            viewModel = viewModel,
+                            cartItems = cartItems,
+                            discountInput = discountInput,
+                            onDiscountChange = {
                                 discountInput = it
                                 viewModel.discountPercent = it.toDoubleOrNull() ?: 0.0
                             },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.width(60.dp).height(44.dp),
-                            textStyle = TextStyle(fontSize = 11.sp, color = GoldColor, textAlign = TextAlign.Center),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = GoldColor,
-                                unfocusedBorderColor = CardOutline
-                            )
+                            onLinkCustomerClick = { showCustomerSelect = true }
                         )
                     }
-                }
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(viewModel.t("GST Taxes (3.0% Jeweller Rate)", "জিএসটি ট্যাক্স (৩% স্পেশাল জুয়েলারি হার)"), fontSize = 12.sp, color = SilverAccent)
-                    Text(
-                        "${viewModel.currencySymbol}${String.format("%.2f", viewModel.cgstAmount + viewModel.sgstAmount)}",
-                        fontSize = 12.sp,
-                        color = Color.White
-                    )
-                }
-
-                Divider(color = CardOutline, modifier = Modifier.padding(vertical = 4.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(viewModel.t("GRAND TOTAL PAYABLE", "সর্বমোট প্রদেয়"), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GoldColor)
-                    Text(
-                        "${viewModel.currencySymbol}${String.format("%.2f", viewModel.grandTotal)}",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = GoldColor
-                    )
-                }
-
-                Button(
-                    onClick = { viewModel.checkoutCart() },
-                    enabled = cartItems.isNotEmpty(),
-                    colors = ButtonDefaults.buttonColors(containerColor = GoldColor, disabledContainerColor = CardOutline),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(viewModel.t("SECURE CHECKOUT & BILL", "সুরক্ষিত পেমেন্ট ও রসিদ তৈরি"), color = if (cartItems.isNotEmpty()) Color.Black else SilverAccent, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
                 }
             }
         }
@@ -2645,6 +2588,401 @@ fun PosScreen(viewModel: JewelViewModel) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PosCatalogPanel(
+    viewModel: JewelViewModel,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedMetalTab: String,
+    onMetalTabSelect: (String) -> Unit,
+    filteredItems: List<com.example.data.db.JewelItem>,
+    onItemAdd: (com.example.data.db.JewelItem) -> Unit
+) {
+    val rates by viewModel.liveMetalRate.collectAsState()
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = viewModel.t("SHOWROOM COUNTER CATALOG", "রিয়েল-টাইম শোরুম ক্যাটালগ"),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = GoldColor
+        )
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
+            placeholder = { Text(viewModel.t("Search by Item Name or Code...", "আইটেম বা কোড দিয়ে খুঁজুন..."), fontSize = 13.sp, color = SilverAccent) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = GoldColor, modifier = Modifier.size(18.dp)) },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = SilverAccent)
+                    }
+                }
+            },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = GoldColor,
+                unfocusedBorderColor = CardOutline,
+                focusedContainerColor = LuxurySurface,
+                unfocusedContainerColor = LuxurySurface
+            ),
+            shape = RoundedCornerShape(10.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf("All", "Gold", "Silver", "Platinum").forEach { tab ->
+                val active = selectedMetalTab == tab
+                val label = when(tab) {
+                    "All" -> viewModel.t("All Ornaments", "সব অলঙ্কার")
+                    "Gold" -> viewModel.t("Gold", "স্বর্ণ")
+                    "Silver" -> viewModel.t("Silver", "রূপা")
+                    "Platinum" -> viewModel.t("Platinum", "প্ল্যাটিনাম")
+                    else -> tab
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (active) GoldColor else LuxurySurfaceCard)
+                        .clickable { onMetalTabSelect(tab) }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = label,
+                        color = if (active) Color.Black else Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        if (filteredItems.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(LuxurySurface, RoundedCornerShape(12.dp))
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(imageVector = Icons.Default.Inventory, contentDescription = "No Stock", tint = CardOutline, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = viewModel.t("No active ornaments matching filters.", "কোন ম্যাচিং জুয়েলারি সামগ্রী পাওয়া যায়নি।"),
+                        color = SilverAccent,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 150.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(filteredItems) { item ->
+                    val calculatedPrice = rates?.let { r ->
+                        item.calculatePrice(
+                            gold24kRate = r.gold24k,
+                            gold22kRate = r.gold22k,
+                            gold21kRate = r.gold21k,
+                            gold18kRate = r.gold18k,
+                            silverRate = r.silver
+                        )
+                    } ?: (item.weight * 11050.0 + item.makingCharges)
+
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = LuxurySurfaceCard),
+                        border = BorderStroke(1.dp, CardOutline),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = item.code,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GoldColor
+                                )
+                                Badge(
+                                    containerColor = if (item.stockCount > 0) GoldColor.copy(alpha = 0.15f) else Color.Red.copy(alpha = 0.15f),
+                                    contentColor = if (item.stockCount > 0) GoldColor else Color.Red
+                                ) {
+                                    Text(
+                                        text = if (item.stockCount > 0) "${item.stockCount} ${viewModel.t("Pcs", "টি")}" else "SOLD OUT",
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = item.name,
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Text(
+                                text = "${item.purity} • ${item.weight}g",
+                                color = SilverAccent,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+
+                            Text(
+                                text = "${viewModel.currencySymbol}${String.format("%.2f", calculatedPrice)}",
+                                color = GoldColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Button(
+                                onClick = { onItemAdd(item) },
+                                enabled = item.stockCount > 0,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(30.dp),
+                                contentPadding = PaddingValues(0.dp),
+                                shape = RoundedCornerShape(6.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = GoldColor,
+                                    disabledContainerColor = CardOutline
+                                )
+                            ) {
+                                Icon(Icons.Default.AddShoppingCart, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.Black)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(viewModel.t("ADD TO CAR", "কার্টে যোগ করুন"), fontSize = 10.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PosBillingPanel(
+    viewModel: JewelViewModel,
+    cartItems: List<com.example.ui.viewmodel.CartItem>,
+    discountInput: String,
+    onDiscountChange: (String) -> Unit,
+    onLinkCustomerClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = LuxurySurface),
+        border = BorderStroke(1.dp, CardOutline),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(viewModel.t("Assigned Customer CRM", "গ্রাহকের প্রোফাইল (CRM)"), fontSize = 10.sp, color = SilverAccent)
+                Text(
+                    text = if(viewModel.cartCustomer?.name == null) viewModel.t("Walk-in Showroom Guest", "শোরুমের সাধারণ ক্রেতা") else viewModel.cartCustomer!!.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = if (viewModel.cartCustomer != null) GoldColor else Color.White
+                )
+                viewModel.cartCustomer?.phone?.let {
+                    Text(viewModel.t("Phone: ", "ফোন: ") + it, fontSize = 11.sp, color = SilverAccent)
+                }
+            }
+
+            Button(
+                onClick = onLinkCustomerClick,
+                colors = ButtonDefaults.buttonColors(containerColor = LuxurySurfaceCard),
+                border = BorderStroke(1.dp, CardOutline),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(if (viewModel.cartCustomer == null) viewModel.t("LINK CRM", "গ্রাহক লিঙ্ক") else viewModel.t("CHANGE", "পরিবর্তন"), color = GoldColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = viewModel.t("Basket Items (", "সক্রিয় কার্ট (") + "${cartItems.size})",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        if (cartItems.isNotEmpty()) {
+            TextButton(
+                onClick = { viewModel.clearCart() },
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text(viewModel.t("Clear All", "সব মুছুন"), color = Color.Red, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+
+    if (cartItems.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(110.dp)
+                .background(LuxurySurface, RoundedCornerShape(12.dp))
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = "Empty", tint = CardOutline, modifier = Modifier.size(32.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(viewModel.t("Basket is empty. Select items to calculate billing.", "কার্ট খালি। বাম পাশের ক্যাটালগ থেকে অলঙ্কার যোগ করুন।"), color = SilverAccent, fontSize = 11.sp, textAlign = TextAlign.Center)
+            }
+        }
+    } else {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            cartItems.forEach { item ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(LuxurySurfaceCard, RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.item.code, fontSize = 9.sp, color = GoldColor, fontWeight = FontWeight.Bold)
+                        Text(item.item.name, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${item.item.purity} • ${item.item.weight}g", color = SilverAccent, fontSize = 10.sp)
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "${viewModel.currencySymbol}${String.format("%.2f", item.finalPrice)}",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                        IconButton(
+                            onClick = { viewModel.removeCartItem(item) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Remove", tint = Color.Red, modifier = Modifier.size(14.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = LuxurySurface),
+        border = BorderStroke(1.dp, CardOutline)
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(viewModel.t("Total Jewel Weight", "অলঙ্কারের মোট ওজন"), fontSize = 11.sp, color = SilverAccent)
+                Text("${String.format("%.3f", viewModel.totalWeight)} grams", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(viewModel.t("Pre-Tax Subtotal", "কর-পূর্ব সাবটোটাল"), fontSize = 11.sp, color = SilverAccent)
+                Text("${viewModel.currencySymbol}${String.format("%.2f", viewModel.subtotal)}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(viewModel.t("Special Discount (%)", "বিশেষ ছাড় (%)"), fontSize = 11.sp, color = SilverAccent)
+                OutlinedTextField(
+                    value = discountInput,
+                    onValueChange = onDiscountChange,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.width(64.dp).height(38.dp),
+                    textStyle = TextStyle(fontSize = 11.sp, color = GoldColor, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GoldColor,
+                        unfocusedBorderColor = CardOutline,
+                        focusedContainerColor = LuxurySurfaceCard,
+                        unfocusedContainerColor = LuxurySurfaceCard
+                    ),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(viewModel.t("GST Taxes (3.0% Jeweller Rate)", "জিএসটি ট্যাক্স (৩% স্পেশাল জুয়েলারি হার)"), fontSize = 11.sp, color = SilverAccent)
+                Text(
+                    "${viewModel.currencySymbol}${String.format("%.2f", viewModel.cgstAmount + viewModel.sgstAmount)}",
+                    fontSize = 11.sp,
+                    color = Color.White
+                )
+            }
+
+            HorizontalDivider(color = CardOutline, modifier = Modifier.padding(vertical = 4.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(viewModel.t("GRAND TOTAL PAYABLE", "সর্বমোট প্রদেয়"), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = GoldColor)
+                Text(
+                    "${viewModel.currencySymbol}${String.format("%.2f", viewModel.grandTotal)}",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = GoldColor
+                )
+            }
+
+            Button(
+                onClick = { viewModel.checkoutCart() },
+                enabled = cartItems.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = GoldColor, disabledContainerColor = CardOutline),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp)
+                    .height(44.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(viewModel.t("SECURE CHECKOUT & BILL", "সুরক্ষিত পেমেন্ট ও রসিদ তৈরি"), color = if (cartItems.isNotEmpty()) Color.Black else SilverAccent, fontWeight = FontWeight.Bold, fontSize = 11.sp)
             }
         }
     }

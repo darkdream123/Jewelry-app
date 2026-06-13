@@ -44,6 +44,25 @@ class JewelViewModel(
     private val repository: JewelRepository
 ) : AndroidViewModel(application) {
 
+    // --- Configuration & Identity States ---
+    var currentLanguage by mutableStateOf("bn")
+        private set
+
+    var shopName by mutableStateOf("স্বর্ণালি শিল্পালয়")
+        private set
+
+    var proprietorName by mutableStateOf("সুভাষ চন্দ্র পাল শান্ত")
+        private set
+
+    var proprietorAddress by mutableStateOf("তারাকান্দা মধ্যবাজার")
+        private set
+
+    var proprietorPhone by mutableStateOf("01712416731, 01824949920")
+        private set
+
+    var currencySymbol by mutableStateOf("টাকা")
+        private set
+
     // --- Text-to-Speech Voice Support ---
     private var tts: TextToSpeech? = null
     var isTtsReady by mutableStateOf(false)
@@ -223,10 +242,6 @@ class JewelViewModel(
         }
     }
 
-    // --- Navigation & Auth ---
-    var currentLanguage by mutableStateOf("bn") // Defaults to "bn" (Bengali) as requested beautifully!
-        private set
-
     fun toggleLanguage() {
         currentLanguage = if (currentLanguage == "en") "bn" else "en"
     }
@@ -235,22 +250,11 @@ class JewelViewModel(
         return if (currentLanguage == "bn") bn else en
     }
 
+    // --- Navigation & Auth ---
     var currentScreen by mutableStateOf(AppScreen.LOGIN)
         private set
 
     var isLoggedIn by mutableStateOf(false)
-        private set
-
-    var shopName by mutableStateOf("স্বর্ণালি শিল্পালয়")
-        private set
-
-    var proprietorName by mutableStateOf("সুভাষ চন্দ্র পাল শান্ত")
-        private set
-
-    var proprietorAddress by mutableStateOf("তারাকান্দা মধ্যবাজার")
-        private set
-
-    var proprietorPhone by mutableStateOf("01712416731, 01824949920")
         private set
 
     fun getTranslatedShopName(): String {
@@ -264,9 +268,6 @@ class JewelViewModel(
             shopName
         }
     }
-
-    var currencySymbol by mutableStateOf("টাকা")
-        private set
 
     fun login(name: String, currency: String = "টাকা") {
         if (name.isNotBlank()) {

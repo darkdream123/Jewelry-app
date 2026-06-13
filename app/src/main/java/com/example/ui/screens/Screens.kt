@@ -411,6 +411,108 @@ fun DashboardScreen(viewModel: JewelViewModel) {
             }
         }
 
+        // --- NEW: Golden Brand Proprietor Details Card ---
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = LuxurySurface),
+                border = BorderStroke(1.dp, GoldColor.copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(GoldColor.copy(alpha = 0.15f), CircleShape)
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VerifiedUser,
+                                contentDescription = "Verified Owner Icon",
+                                tint = GoldColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = viewModel.t("SHOWROOM LICENSED PROPRIETOR", "শোরুম ও ডিলারশিপের মালিকানা তথ্য"),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoldColor,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = viewModel.proprietorName,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = CardOutline, thickness = 1.dp, modifier = Modifier.padding(bottom = 12.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Address Icon",
+                            tint = SilverAccent,
+                            modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                        )
+                        Column {
+                            Text(
+                                text = viewModel.t("Corporate Address", "ব্যবসায়িক শোরুম কার্যালয়"),
+                                fontSize = 10.sp,
+                                color = SilverAccent,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = viewModel.proprietorAddress,
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhoneEnabled,
+                            contentDescription = "Phones Icon",
+                            tint = SilverAccent,
+                            modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                        )
+                        Column {
+                            Text(
+                                text = viewModel.t("Official Mobile Numbers", "সক্রিয় মোবাইল যোগাযোগ"),
+                                fontSize = 10.sp,
+                                color = SilverAccent,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = viewModel.proprietorPhone,
+                                fontSize = 12.sp,
+                                color = GoldColor,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // Live Metal Rates Banner with high clarity Bengali text
         item {
             rates?.let { r ->

@@ -244,6 +244,15 @@ class JewelViewModel(
     var shopName by mutableStateOf("স্বর্ণালি শিল্পালয়")
         private set
 
+    var proprietorName by mutableStateOf("সুভাষ চন্দ্র পাল শান্ত")
+        private set
+
+    var proprietorAddress by mutableStateOf("তারাকান্দা মধ্যবাজার")
+        private set
+
+    var proprietorPhone by mutableStateOf("01712416731, 01824949920")
+        private set
+
     fun getTranslatedShopName(): String {
         return if (shopName.equals("Swarnali Shilpaloy", ignoreCase = true) || 
                    shopName.equals("স্বর্ণালি শিল্পালয়", ignoreCase = true) || 
@@ -408,25 +417,30 @@ class JewelViewModel(
         val canvas1 = page1.canvas
 
         canvas1.drawText("SWARNALI SHILPALOY - BUSINESS INTELLIGENCE", 50f, 50f, titlePaint)
-        canvas1.drawText("CLIENT CRM DATABASE REPORT", 50f, 75f, headerPaint)
-        canvas1.drawLine(50f, 85f, 545f, 85f, linePaint)
+        canvas1.drawText("CLIENT CRM DATABASE REPORT", 50f, 70f, headerPaint)
+        canvas1.drawLine(50f, 78f, 545f, 78f, linePaint)
+
+        // Showroom Proprietor Info Block
+        canvas1.drawText("Owner / Proprietor: $proprietorName (সুভাষ চন্দ্র পাল শান্ত)", 50f, 95f, textPaint)
+        canvas1.drawText("Showroom Address: $proprietorAddress (তারাকান্দা মধ্যবাজার)", 50f, 110f, textPaint)
+        canvas1.drawText("Contact Mobile: $proprietorPhone", 50f, 125f, textPaint)
 
         val timestampLabel = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
-        canvas1.drawText("Report Generated: $timestampLabel", 50f, 105f, textPaint)
-        canvas1.drawText("Total Loyalty Customers: ${customersList.size}", 50f, 120f, textPaint)
+        canvas1.drawText("Report Generated: $timestampLabel", 50f, 145f, textPaint)
+        canvas1.drawText("Total Loyalty Customers: ${customersList.size}", 50f, 160f, textPaint)
         if (rates != null) {
-            canvas1.drawText("Live Rate gold 22K reference: ${rates.gold22k} ${rates.currency}/g", 50f, 135f, textPaint)
+            canvas1.drawText("Live Rate gold 22K reference: ${rates.gold22k} ${rates.currency}/g", 50f, 175f, textPaint)
         }
 
-        canvas1.drawLine(50f, 155f, 545f, 155f, linePaint)
-        canvas1.drawText("CUSTOMER NAME", 60f, 170f, headerPaint)
-        canvas1.drawText("PHONE NUMBER", 230f, 170f, headerPaint)
-        canvas1.drawText("ADDRESS DETAILS", 380f, 170f, headerPaint)
-        canvas1.drawLine(50f, 180f, 545f, 180f, linePaint)
+        canvas1.drawLine(50f, 185f, 545f, 185f, linePaint)
+        canvas1.drawText("CUSTOMER NAME", 60f, 200f, headerPaint)
+        canvas1.drawText("PHONE NUMBER", 230f, 200f, headerPaint)
+        canvas1.drawText("ADDRESS DETAILS", 380f, 200f, headerPaint)
+        canvas1.drawLine(50f, 210f, 545f, 210f, linePaint)
 
-        var currentY = 200f
+        var currentY = 228f
         for (customer in customersList.take(25)) {
-            if (currentY > 780f) break
+            if (currentY > 800f) break
             canvas1.drawText(customer.name, 60f, currentY, textPaint)
             canvas1.drawText(customer.phone, 230f, currentY, textPaint)
             canvas1.drawText(customer.address ?: "N/A", 380f, currentY, textPaint)

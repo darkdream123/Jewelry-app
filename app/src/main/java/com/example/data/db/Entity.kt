@@ -22,6 +22,7 @@ data class JewelItem(
     fun calculatePrice(
         gold24kRate: Double,
         gold22kRate: Double,
+        gold21kRate: Double,
         gold18kRate: Double,
         silverRate: Double
     ): Double {
@@ -30,6 +31,7 @@ data class JewelItem(
                 when (purity.uppercase()) {
                     "24K" -> gold24kRate
                     "22K" -> gold22kRate
+                    "21K" -> gold21kRate
                     "18K" -> gold18kRate
                     else -> gold22kRate
                 }
@@ -51,6 +53,15 @@ data class Customer(
     val phone: String,         // can use standard lookups
     val email: String? = null,
     val address: String? = null,
+    val photoUrl: String? = null, // Base64 or URI representing the customer's preferred item illustration, profile photo, or catalog item
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "gallery_photos")
+data class GalleryPhoto(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val base64Data: String,
+    val description: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )
 
@@ -77,8 +88,9 @@ data class MetalRate(
     @PrimaryKey val id: Int = 1, // Always 1 for singular config
     val gold24k: Double,
     val gold22k: Double,
+    val gold21k: Double = gold22k * 0.954, // Default approximation of 21K if not manually configured
     val gold18k: Double,
     val silver: Double,
-    val currency: String = "USD",
+    val currency: String = "টাকা",
     val lastUpdated: Long = System.currentTimeMillis()
 )

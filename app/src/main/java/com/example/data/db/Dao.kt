@@ -80,3 +80,18 @@ interface MetalRateDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateRates(rate: MetalRate)
 }
+
+@Dao
+interface GalleryPhotoDao {
+    @Query("SELECT * FROM gallery_photos ORDER BY timestamp DESC")
+    fun getAllPhotos(): Flow<List<GalleryPhoto>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPhoto(photo: GalleryPhoto)
+
+    @Delete
+    suspend fun deletePhoto(photo: GalleryPhoto)
+
+    @Query("DELETE FROM gallery_photos WHERE id = :id")
+    suspend fun deletePhotoById(id: Int)
+}

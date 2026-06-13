@@ -30,8 +30,15 @@ data class Content(
 )
 
 @JsonClass(generateAdapter = true)
+data class InlineData(
+    @Json(name = "mimeType") val mimeType: String,
+    @Json(name = "data") val data: String
+)
+
+@JsonClass(generateAdapter = true)
 data class Part(
-    @Json(name = "text") val text: String? = null
+    @Json(name = "text") val text: String? = null,
+    @Json(name = "inlineData") val inlineData: InlineData? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -173,6 +180,132 @@ object GeminiService {
                 ?: "Review successfully initiated. Add data points to refresh insights."
         } catch (e: Exception) {
             "Insights unavailable: ${e.localizedMessage}. Please check internet or API Key."
+        }
+    }
+
+    suspend fun analyzeJewelImage(
+        base64Data: String,
+        mimeType: String = "image/jpeg"
+    ): String = withContext(Dispatchers.IO) {
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
+            return@withContext "API Key Configuration Missing! Please set your GEMINI_API_KEY."
+        }
+
+        val prompt = "Analyze this fine jewelry ornament image in detail. " +
+            "1. Identify the ornament category (e.g., Ring, Necklace, Earrings, Bracelet, Bangle, Chain, Pendant).\n" +
+            "2. Guess metal type (Gold, Silver, Platinum) and estimated purity status (22K, 18K, 950 Pt, etc.).\n" +
+            "3. Describe key aesthetic specifications (patterns, stone inserts, handcraft detail style).\n" +
+            "4. Provide a luxurious marketing heading and body for social status showcase.\n\n" +
+            "Be extremely descriptive and highlight its premium, high-fashion artistry!"
+
+        val request = GenerateContentRequest(
+            contents = listOf(
+                Content(
+                    parts = listOf(
+                        Part(text = prompt),
+                        Part(inlineData = InlineData(mimeType = mimeType, data = base64Data))
+                    )
+                )
+            ),
+            generationConfig = GenerationConfig(
+                temperature = 0.5f,
+                maxOutputTokens = 1200
+            ),
+            systemInstruction = Content(
+                parts = listOf(Part(text = "You are a master jeweler, senior metal appraiser, and high-fashion luxury marketing director."))
+            )
+        )
+
+        try {
+            val response = RetrofitGeminiClient.service.generateContent(apiKey, request)
+            response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                ?: "AI analysis could not recognize the jewelry components of the uploaded image. Try a clearer close-up."
+        } catch (e: Exception) {
+            "AI Image Analysis failed: ${e.localizedMessage}. Please verify internet or API spec."
+        }
+    }
+
+    suspend fun generateSegmentationMarketingCampaigns(
+        customersJsonStr: String,
+        recentInvoicesSummary: String,
+        shopName: String
+    ): String = withContext(Dispatchers.IO) {
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
+            return@withContext "API Key Configuration Missing! Please set your GEMINI_API_KEY in the Secrets panel in AI Studio UI to generate real marketing strategies."
+        }
+
+        val prompt = "Our premium jewelry shop is \"$shopName\".\n" +
+            "Here is our customer database:\n$customersJsonStr\n\n" +
+            "Here are our recent sales transactions and invoice logs:\n$recentInvoicesSummary\n\n" +
+            "Please analyze these clients and their purchase histories to generate segment-specific marketing campaigns.\n" +
+            "Provide exactly 3 custom marketing campaigns. Structure your output clearly and attractively as follows:\n" +
+            "1. Segment Name (e.g. VIP Royal Gold Enthusiasts, Bridal & Heavy Jewelry Seekers, Minimalist Silver & Diamond Shoppers)\n" +
+            "2. Segment Persona & Buying Trend analysis\n" +
+            "3. WhatsApp / SMS Marketing Copy (In natural Bengali with jewelry emojis) ready to capture and send\n" +
+            "4. Highly targeted inventory pitches\n\n" +
+            "Make all instructions extremely clear and use brilliant, professional, high-fashion branding tones. Format gracefully in clean Markdown!"
+
+        val request = GenerateContentRequest(
+            contents = listOf(
+                Content(parts = listOf(Part(text = prompt)))
+            ),
+            generationConfig = GenerationConfig(
+                temperature = 0.7f,
+                maxOutputTokens = 1500
+            ),
+            systemInstruction = Content(
+                parts = listOf(Part(text = "You are a senior jewelry retail growth consultant, professional CRM campaigns coordinator, and master copywriter fluent in high-society Bengali and modern English."))
+            )
+        )
+
+        try {
+            val response = RetrofitGeminiClient.service.generateContent(apiKey, request)
+            response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                ?: "No response generated. Please complete more client invoices to compile analysis."
+        } catch (e: Exception) {
+            "Segmentation Campaign Analysis unavailable: ${e.localizedMessage}."
+        }
+    }
+
+    suspend fun askBusinessAssistant(
+        currentHistorySummary: String,
+        currentInventorySummary: String,
+        query: String,
+        shopName: String
+    ): String = withContext(Dispatchers.IO) {
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
+            return@withContext "API Key Configuration Missing! Please set your GEMINI_API_KEY in the Secrets panel in AI Studio UI to generate real marketing strategies or answer questions."
+        }
+
+        val prompt = "Our premium jewelry shop name is \"$shopName\".\n" +
+            "Here is the database summary:\n" +
+            "--- RECENT SALES & TRANSACTION RECORDS ---\n$currentHistorySummary\n\n" +
+            "--- LIVE STOCK INVENTORY REGISTER ---\n$currentInventorySummary\n\n" +
+            "User's business inquiry or copy-writing request:\n\"$query\"\n\n" +
+            "Please analyze the store statistics and provide a highly useful, accurate, and professional response. If they ask about sales or highest category or stock performance, calculate/derive it from the live records provided above. If they ask to draft elegant sms or messages (e.g. Diwali promotional messages, Eid wishes, or engagement offers), write beautiful, ready-to-copy Bengali and English promotional copy with luxury jewelry emojis. Format neatly in clean Markdown!"
+
+        val request = GenerateContentRequest(
+            contents = listOf(
+                Content(parts = listOf(Part(text = prompt)))
+            ),
+            generationConfig = GenerationConfig(
+                temperature = 0.7f,
+                maxOutputTokens = 1500
+            ),
+            systemInstruction = Content(
+                parts = listOf(Part(text = "You are Swarnali Shilpaloy's elite AI Business Strategist, Jewelry Consultant, and Financial Retail Analyst. You write professional, accurate reports and exquisite copy in beautiful Bengali and English."))
+            )
+        )
+
+        try {
+            val response = RetrofitGeminiClient.service.generateContent(apiKey, request)
+            response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                ?: "AI Assistant couldn't process this request. Feel free to rephrase."
+        } catch (e: Exception) {
+            "Assistant offline: ${e.localizedMessage}."
         }
     }
 }

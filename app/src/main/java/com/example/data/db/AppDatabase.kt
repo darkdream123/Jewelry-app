@@ -10,8 +10,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [JewelItem::class, Customer::class, Invoice::class, MetalRate::class],
-    version = 1,
+    entities = [JewelItem::class, Customer::class, Invoice::class, MetalRate::class, GalleryPhoto::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -19,6 +19,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun customerDao(): CustomerDao
     abstract fun invoiceDao(): InvoiceDao
     abstract fun metalRateDao(): MetalRateDao
+    abstract fun galleryPhotoDao(): GalleryPhotoDao
 
     companion object {
         @Volatile
@@ -29,8 +30,9 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "smart_jewel_db"
+                    "smart_jewel_db_v4"
                 )
+                .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(scope))
                 .build()
                 INSTANCE = instance
@@ -60,15 +62,16 @@ abstract class AppDatabase : RoomDatabase() {
             customerDao: CustomerDao,
             metalRateDao: MetalRateDao
         ) {
-            // 1. Initialise Live Metal Rates (Realistic standard prices in USD per gram)
+            // 1. Initialise Live Metal Rates inside Bangladesh (BDT standard price per gram)
             metalRateDao.updateRates(
                 MetalRate(
                     id = 1,
-                    gold24k = 76.50,
-                    gold22k = 71.20,
-                    gold18k = 59.80,
-                    silver = 0.95,
-                    currency = "USD"
+                    gold24k = 11050.0,
+                    gold22k = 10130.0,
+                    gold21k = 9670.0,
+                    gold18k = 8290.0,
+                    silver = 180.0,
+                    currency = "টাকা"
                 )
             )
 

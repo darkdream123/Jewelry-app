@@ -1,5 +1,5 @@
 {
-  "name": "Swarnali Shilpaloy",
+  "name": "স্বর্ণালি শিল্পালয়",
   "description": "Smart jewellery management software for point of sale, inventory tracking, customer database, billing, metal rate management, and AI marketing template generation.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

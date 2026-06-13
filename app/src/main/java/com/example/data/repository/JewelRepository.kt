@@ -7,8 +7,24 @@ class JewelRepository(
     private val jewelDao: JewelDao,
     private val customerDao: CustomerDao,
     private val invoiceDao: InvoiceDao,
-    private val metalRateDao: MetalRateDao
+    private val metalRateDao: MetalRateDao,
+    private val galleryPhotoDao: GalleryPhotoDao
 ) {
+    // Gallery Photos Flow
+    val allPhotos: Flow<List<GalleryPhoto>> = galleryPhotoDao.getAllPhotos()
+
+    suspend fun insertPhoto(photo: GalleryPhoto) {
+        galleryPhotoDao.insertPhoto(photo)
+    }
+
+    suspend fun deletePhoto(photo: GalleryPhoto) {
+        galleryPhotoDao.deletePhoto(photo)
+    }
+
+    suspend fun deletePhotoById(id: Int) {
+        galleryPhotoDao.deletePhotoById(id)
+    }
+
     // Inventory Flow
     val allItems: Flow<List<JewelItem>> = jewelDao.getAllItems()
     val availableItems: Flow<List<JewelItem>> = jewelDao.getAvailableItems()
